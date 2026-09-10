@@ -1,0 +1,9 @@
+openapi: 3.0.0
+info:
+  title: Hospital Appointment API
+  version: 1.0.0
+  description: API for managing hospital appointments - Team 5
+servers:
+  - url: http://localhost:5000
+    description: Development server
+paths: {}
