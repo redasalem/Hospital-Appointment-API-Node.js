@@ -13,9 +13,9 @@ const userResponse = (user) => ({ _id: user._id, name: user.name, email: user.em
 
 async function registerUser(req, res, next) {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, password } = req.body;
     if (await User.exists({ email })) throw new ApiError('User already exists', 409);
-    const user = await User.create({ name, email, password, role });
+    const user = await User.create({ name, email, password, role: 'patient' });
     return res.status(201).json({ success: true, data: userResponse(user), token: generateToken(user) });
   } catch (error) { return next(error); }
 }

@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "cf86c76a-3431-4881-a655-13b35448521c",
     "name": "Hospital Appointment API",
-    "description": "Complete API collection. Register patient and doctor accounts, log in all required roles, then create the doctor profile and appointment in order. Login and create requests save tokens and IDs automatically.",
+    "description": "Complete API collection. Register a patient, log in as an admin, then let the admin create the doctor account and profile. Login and create requests save tokens and IDs automatically.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -16,7 +16,6 @@
     { "key": "patientToken", "value": "" },
     { "key": "doctorToken", "value": "" },
     { "key": "adminToken", "value": "" },
-    { "key": "doctorUserId", "value": "" },
     { "key": "doctorId", "value": "" },
     { "key": "appointmentId", "value": "" },
     { "key": "futureAppointmentTime", "value": "2030-06-17T09:00:00.000Z" }
@@ -42,17 +41,19 @@
       }]
     },
     {
+      "name": "Documentation",
+      "item": [{
+        "name": "Swagger UI",
+        "request": { "method": "GET", "url": "{{baseUrl}}/api-docs" }
+      }]
+    },
+    {
       "name": "Authentication",
       "item": [
         {
           "name": "Register Patient",
-          "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw":"{\n  \"name\": \"Postman Patient\",\n  \"email\": \"{{patientEmail}}\",\n  \"password\": \"{{patientPassword}}\",\n  \"role\": \"patient\"\n}"}, "url": "{{baseUrl}}/api/auth/register" },
+          "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw":"{\n  \"name\": \"Postman Patient\",\n  \"email\": \"{{patientEmail}}\",\n  \"password\": \"{{patientPassword}}\"\n}"}, "url": "{{baseUrl}}/api/auth/register" },
           "event": [{"listen":"test","script":{"type":"text/javascript","exec":["pm.test('created', () => pm.response.to.have.status(201));","pm.collectionVariables.set('patientToken', pm.response.json().token);"]}}]
-        },
-        {
-          "name": "Register Doctor Account",
-          "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw":"{\n  \"name\": \"Dr. Postman\",\n  \"email\": \"{{doctorEmail}}\",\n  \"password\": \"{{doctorPassword}}\",\n  \"role\": \"doctor\"\n}"}, "url": "{{baseUrl}}/api/auth/register" },
-          "event": [{"listen":"test","script":{"type":"text/javascript","exec":["pm.test('created', () => pm.response.to.have.status(201));","const b = pm.response.json(); pm.collectionVariables.set('doctorToken', b.token); pm.collectionVariables.set('doctorUserId', b.data._id);"]}}]
         },
         {
           "name": "Login Patient",
@@ -62,7 +63,7 @@
         {
           "name": "Login Doctor",
           "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw":"{\n  \"email\": \"{{doctorEmail}}\",\n  \"password\": \"{{doctorPassword}}\"\n}"}, "url": "{{baseUrl}}/api/auth/login" },
-          "event": [{"listen":"test","script":{"type":"text/javascript","exec":["pm.test('logged in', () => pm.response.to.have.status(200));","const b = pm.response.json(); pm.collectionVariables.set('doctorToken', b.token); pm.collectionVariables.set('doctorUserId', b.data._id);"]}}]
+          "event": [{"listen":"test","script":{"type":"text/javascript","exec":["pm.test('logged in', () => pm.response.to.have.status(200));","pm.collectionVariables.set('doctorToken', pm.response.json().token);"]}}]
         },
         {
           "name": "Login Admin",
@@ -78,7 +79,7 @@
       "item": [
         {
           "name": "Create Doctor Profile (Admin)",
-          "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"},{"key":"Authorization","value":"Bearer {{adminToken}}"}], "body": {"mode":"raw","raw":"{\n  \"user\": \"{{doctorUserId}}\",\n  \"name\": \"Dr. Postman\",\n  \"specialization\": \"Cardiology\",\n  \"phone\": \"+1-555-0199\",\n  \"workingHours\": [{ \"day\": \"Monday\", \"startTime\": \"09:00\", \"endTime\": \"17:00\" }]\n}"}, "url": "{{baseUrl}}/api/doctors" },
+          "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"},{"key":"Authorization","value":"Bearer {{adminToken}}"}], "body": {"mode":"raw","raw":"{\n  \"name\": \"Dr. Postman\",\n  \"email\": \"{{doctorEmail}}\",\n  \"password\": \"{{doctorPassword}}\",\n  \"specialization\": \"Cardiology\",\n  \"phone\": \"+1-555-0199\",\n  \"workingHours\": [{ \"day\": \"Monday\", \"startTime\": \"09:00\", \"endTime\": \"17:00\" }]\n}"}, "url": "{{baseUrl}}/api/doctors" },
           "event": [{"listen":"test","script":{"type":"text/javascript","exec":["pm.test('profile created', () => pm.response.to.have.status(201));","pm.collectionVariables.set('doctorId', pm.response.json().data._id);"]}}]
         },
         { "name": "List Doctors", "request": { "method": "GET", "url": "{{baseUrl}}/api/doctors?page=1&limit=10" } },

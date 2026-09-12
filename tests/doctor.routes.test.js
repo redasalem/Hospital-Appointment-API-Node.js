@@ -3,25 +3,21 @@ const request = require('supertest');
 const jwt = require('jsonwebtoken');
 const app = require('../src/app');
 const Doctor = require('../src/models/doctor.model');
+const User = require('../src/models/User');
 const { connectDB, closeDB, clearDB } = require('./testDb');
 
 // Increase timeout for test database operations
 jest.setTimeout(30000);
 
 // Generate tokens for RBAC testing
-const adminToken = jwt.sign(
-  { id: 'admin-id-123', role: 'Admin' },
-  process.env.JWT_SECRET || 'your_jwt_secret_key'
-);
-
-const patientToken = jwt.sign(
-  { id: 'patient-id-123', role: 'Patient' },
-  process.env.JWT_SECRET || 'your_jwt_secret_key'
-);
+let adminToken;
+let patientToken;
 
 // ── Test Fixtures ──────────────────────────────────────────────────
 const sampleDoctor = {
   name: 'Dr. Ahmed Hassan',
+  email: 'ahmed.hassan@example.com',
+  password: 'SecurePass123!',
   specialization: 'Cardiology',
   description: 'Experienced heart specialist',
   phone: '01012345678',
@@ -40,8 +36,15 @@ afterAll(async () => {
   await closeDB();
 });
 
-afterEach(async () => {
+beforeEach(async () => {
   await clearDB();
+  const [admin, patient] = await User.create([
+    { name: 'Admin User', email: 'admin@example.com', password: 'SecurePass123!', role: 'admin' },
+    { name: 'Patient User', email: 'patient@example.com', password: 'SecurePass123!', role: 'patient' },
+  ]);
+  const secret = process.env.JWT_SECRET || 'your_jwt_secret_key';
+  adminToken = jwt.sign({ id: admin._id, role: 'admin', jti: 'admin-test-token' }, secret);
+  patientToken = jwt.sign({ id: patient._id, role: 'patient', jti: 'patient-test-token' }, secret);
 });
 
 // ── Tests ──────────────────────────────────────────────────────────
@@ -85,6 +88,9 @@ describe('Doctor Routes - /api/doctors', () => {
       expect(res.body.data.specialization).toBe(sampleDoctor.specialization);
       expect(res.body.data.phone).toBe(sampleDoctor.phone);
       expect(res.body.data.workingHours).toHaveLength(2);
+      const account = await User.findById(res.body.data.user);
+      expect(account.email).toBe(sampleDoctor.email);
+      expect(account.role).toBe('doctor');
     });
 
     it('should return 400 when required fields are missing', async () => {
@@ -137,6 +143,16 @@ describe('Doctor Routes - /api/doctors', () => {
         .expect(400);
 
       expect(res.body.success).toBe(false);
+    });
+
+    it('should return 409 when the doctor email already exists', async () => {
+      await User.create({ name: 'Existing User', email: sampleDoctor.email, password: 'SecurePass123!', role: 'patient' });
+
+      await request(app)
+        .post('/api/doctors')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send(sampleDoctor)
+        .expect(409);
     });
   });
 
