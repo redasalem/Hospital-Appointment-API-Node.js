@@ -3,12 +3,14 @@ const cors = require('cors');
 const setupSwagger = require('./config/swagger');
 const errorHandler = require('./middlewares/errorHandler.middleware');
 
+const aiRoutes = require('./routes/aiRoutes');
+
 const app = express();
 
 // Middleware
 app.use(cors());
 app.use(express.json());
-
+app.use('/api/ai', aiRoutes);
 // Swagger API Documentation
 setupSwagger(app);
 
@@ -23,6 +25,14 @@ app.use('/api/doctors', doctorRoutes);
 
 // Global Error-handling middleware
 app.use(errorHandler);
+
+// Error-handling middleware
+app.use((err, req, res, next) => {
+  // TODO: Implement error handling logic
+  res.status(err.status || 500).json({
+    message: err.message || 'Internal Server Error',
+  });
+});
 
 module.exports = app;
 
