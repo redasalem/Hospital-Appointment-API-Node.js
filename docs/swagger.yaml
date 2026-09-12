@@ -1,596 +1,367 @@
-openapi: 3.0.0
+openapi: 3.0.3
 info:
   title: Hospital Appointment API
   version: 1.0.0
-  description: API for managing hospital appointments - Team 5
+  description: Interactive documentation for the Hospital Appointment API.
 servers:
   - url: http://localhost:5000
-    description: Development server
-
+    description: Local development server
 tags:
-  - name: Doctors
-    description: Doctor Profile Management Endpoints (HAA-4)
-  - name: Appointments
-    description: Appointment scheduling and administration endpoints (HAA-5)
+  - { name: Health }
+  - { name: Authentication }
+  - { name: Doctors }
+  - { name: Appointments }
+  - { name: AI }
 
 paths:
-  /api/appointments:
+  /health:
     get:
-      tags:
-        - Appointments
-      summary: List all appointments
-      description: Returns a paginated system-wide appointment list. Requires the Admin role.
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: page
-          in: query
-          schema:
-            type: integer
-            default: 1
-            minimum: 1
-        - name: limit
-          in: query
-          schema:
-            type: integer
-            default: 10
-            minimum: 1
-            maximum: 100
+      tags: [Health]
+      summary: Check API availability
       responses:
         '200':
-          description: Paginated appointment list
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AppointmentListResponse'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
-          description: Forbidden - requires Admin role
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /api/appointments/{id}:
-    get:
-      tags:
-        - Appointments
-      summary: Get an appointment by ID
-      description: Returns an appointment to its owning Patient or Doctor, or to an Admin.
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          description: 24-character hexadecimal MongoDB ObjectId
-          schema:
-            type: string
+          description: API is available
+          content: { application/json: { schema: { $ref: '#/components/schemas/HealthResponse' } } }
+  /api/auth/register:
+    post:
+      tags: [Authentication]
+      summary: Register a patient or doctor account
+      description: Public registration permits only `patient` and `doctor` roles.
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/RegisterInput' } } }
       responses:
-        '200':
-          description: Appointment details
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AppointmentSingleResponse'
-        '400':
-          description: Invalid appointment ID
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
-          description: Forbidden - appointment belongs to another user
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: Appointment not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+        '201': { $ref: '#/components/responses/AuthSuccessCreated' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '409': { $ref: '#/components/responses/ConflictError' }
+  /api/auth/login:
+    post:
+      tags: [Authentication]
+      summary: Log in and receive a JWT
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/LoginInput' } } }
+      responses:
+        '200': { $ref: '#/components/responses/AuthSuccess' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+  /api/auth/me:
+    get:
+      tags: [Authentication]
+      summary: Get the authenticated user
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { $ref: '#/components/responses/UserSuccess' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+  /api/auth/logout:
+    post:
+      tags: [Authentication]
+      summary: Revoke the current JWT
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { $ref: '#/components/responses/MessageSuccess' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
 
   /api/doctors:
+    get:
+      tags: [Doctors]
+      summary: List doctor profiles
+      parameters:
+        - { $ref: '#/components/parameters/Specialization' }
+        - { $ref: '#/components/parameters/Search' }
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/Limit' }
+      responses:
+        '200': { $ref: '#/components/responses/DoctorListSuccess' }
+        '400': { $ref: '#/components/responses/ValidationError' }
     post:
-      tags:
-        - Doctors
-      summary: Create a new doctor profile
-      description: Adds a new doctor to the system. Requires Admin privileges.
-      security:
-        - bearerAuth: []
+      tags: [Doctors]
+      summary: Create a doctor profile
+      description: Requires an Admin JWT. `user` must identify an existing doctor account.
+      security: [{ bearerAuth: [] }]
       requestBody:
         required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateDoctorInput'
+        content: { application/json: { schema: { $ref: '#/components/schemas/CreateDoctorInput' } } }
       responses:
-        '201':
-          description: Doctor created successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DoctorSingleResponse'
-        '400':
-          description: Validation error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          description: Unauthorized - missing or invalid token
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
-          description: Forbidden - requires Admin role
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-    get:
-      tags:
-        - Doctors
-      summary: Get all doctors
-      description: Returns a paginated list of doctors with optional filtering by specialization and search by name.
-      parameters:
-        - name: specialization
-          in: query
-          description: Filter doctors by medical specialization (case-insensitive)
-          schema:
-            type: string
-          example: Cardiology
-        - name: search
-          in: query
-          description: Keyword search on doctor name
-          schema:
-            type: string
-          example: John
-        - name: page
-          in: query
-          description: Page number for pagination
-          schema:
-            type: integer
-            default: 1
-            minimum: 1
-        - name: limit
-          in: query
-          description: Number of records per page
-          schema:
-            type: integer
-            default: 10
-            minimum: 1
-            maximum: 100
-      responses:
-        '200':
-          description: List of doctors retrieved successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DoctorListResponse'
-        '400':
-          description: Invalid query parameters
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
+        '201': { $ref: '#/components/responses/DoctorSuccessCreated' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '403': { $ref: '#/components/responses/ForbiddenError' }
+        '409': { $ref: '#/components/responses/ConflictError' }
   /api/doctors/{id}:
+    parameters: [{ $ref: '#/components/parameters/DoctorId' }]
     get:
-      tags:
-        - Doctors
-      summary: Get doctor by ID
-      description: Fetches full profile details for a specific doctor.
-      parameters:
-        - name: id
-          in: path
-          required: true
-          description: 24-character hexadecimal MongoDB ObjectId
-          schema:
-            type: string
-          example: 66e27ab6f8e8f2378c89b123
+      tags: [Doctors]
+      summary: Get a doctor profile
       responses:
-        '200':
-          description: Doctor details retrieved successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DoctorSingleResponse'
-        '400':
-          description: Invalid doctor ID format
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: Doctor not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
+        '200': { $ref: '#/components/responses/DoctorSuccess' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '404': { $ref: '#/components/responses/NotFoundError' }
     patch:
-      tags:
-        - Doctors
+      tags: [Doctors]
       summary: Update a doctor profile
-      description: Partially updates an existing doctor profile. Requires Admin privileges.
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          description: 24-character hexadecimal MongoDB ObjectId
-          schema:
-            type: string
-          example: 66e27ab6f8e8f2378c89b123
+      security: [{ bearerAuth: [] }]
       requestBody:
         required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateDoctorInput'
+        content: { application/json: { schema: { $ref: '#/components/schemas/UpdateDoctorInput' } } }
       responses:
-        '200':
-          description: Doctor updated successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DoctorSingleResponse'
-        '400':
-          description: Validation error or invalid ID
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
-          description: Forbidden - requires Admin role
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: Doctor not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
+        '200': { $ref: '#/components/responses/DoctorSuccess' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '403': { $ref: '#/components/responses/ForbiddenError' }
+        '404': { $ref: '#/components/responses/NotFoundError' }
     delete:
-      tags:
-        - Doctors
+      tags: [Doctors]
       summary: Delete a doctor profile
-      description: Deletes a doctor from the system. Fails if the doctor has active/upcoming appointments. Requires Admin privileges.
-      security:
-        - bearerAuth: []
+      description: Requires an Admin JWT. Blocked if the doctor has active or upcoming appointments.
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { $ref: '#/components/responses/DoctorSuccess' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '403': { $ref: '#/components/responses/ForbiddenError' }
+        '404': { $ref: '#/components/responses/NotFoundError' }
+
+  /api/appointments:
+    post:
+      tags: [Appointments]
+      summary: Book a 30-minute appointment
+      description: Requires a Patient JWT. Time must be future, on a 30-minute boundary, and in working hours.
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/BookAppointmentInput' } } }
+      responses:
+        '201': { $ref: '#/components/responses/AppointmentSuccessCreated' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '403': { $ref: '#/components/responses/ForbiddenError' }
+        '404': { $ref: '#/components/responses/NotFoundError' }
+        '409': { $ref: '#/components/responses/ConflictError' }
+    get:
+      tags: [Appointments]
+      summary: List all appointments
+      description: Requires an Admin JWT.
+      security: [{ bearerAuth: [] }]
       parameters:
-        - name: id
-          in: path
-          required: true
-          description: 24-character hexadecimal MongoDB ObjectId
-          schema:
-            type: string
-          example: 66e27ab6f8e8f2378c89b123
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/Limit' }
+      responses:
+        '200': { $ref: '#/components/responses/AppointmentListSuccess' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '403': { $ref: '#/components/responses/ForbiddenError' }
+  /api/appointments/my:
+    get:
+      tags: [Appointments]
+      summary: List the current patient's or doctor's appointments
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/Limit' }
+      responses:
+        '200': { $ref: '#/components/responses/AppointmentListSuccess' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '403': { $ref: '#/components/responses/ForbiddenError' }
+  /api/appointments/{id}:
+    parameters: [{ $ref: '#/components/parameters/AppointmentId' }]
+    get:
+      tags: [Appointments]
+      summary: Get a permitted appointment
+      description: Accessible to the owning patient, linked doctor, or an admin.
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { $ref: '#/components/responses/AppointmentSuccess' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '403': { $ref: '#/components/responses/ForbiddenError' }
+        '404': { $ref: '#/components/responses/NotFoundError' }
+  /api/appointments/{id}/status:
+    parameters: [{ $ref: '#/components/parameters/AppointmentId' }]
+    patch:
+      tags: [Appointments]
+      summary: Update an appointment status
+      description: Requires the linked Doctor JWT. Only valid lifecycle transitions are accepted.
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/UpdateAppointmentStatusInput' } } }
+      responses:
+        '200': { $ref: '#/components/responses/AppointmentSuccess' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '403': { $ref: '#/components/responses/ForbiddenError' }
+        '404': { $ref: '#/components/responses/NotFoundError' }
+        '409': { $ref: '#/components/responses/ConflictError' }
+  /api/appointments/{id}/cancel:
+    parameters: [{ $ref: '#/components/parameters/AppointmentId' }]
+    post:
+      tags: [Appointments]
+      summary: Cancel the current patient's eligible appointment
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { $ref: '#/components/responses/AppointmentSuccess' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '403': { $ref: '#/components/responses/ForbiddenError' }
+        '404': { $ref: '#/components/responses/NotFoundError' }
+        '409': { $ref: '#/components/responses/ConflictError' }
+
+  /api/ai/summarize-symptoms:
+    post:
+      tags: [AI]
+      summary: Summarize symptoms without diagnosis
+      description: Requires a Patient JWT.
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/SymptomSummaryInput' } } }
       responses:
         '200':
-          description: Doctor deleted successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SuccessResponse'
-        '400':
-          description: Invalid ID or cannot delete doctor with active appointments
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
-          description: Forbidden - requires Admin role
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: Doctor not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+          description: Symptom summary generated
+          content: { application/json: { schema: { $ref: '#/components/schemas/SymptomSummaryResponse' } } }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '403': { $ref: '#/components/responses/ForbiddenError' }
+        '502':
+          description: Symptom summary service is unavailable
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
 
 components:
   securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+  parameters:
+    DoctorId: { name: id, in: path, required: true, schema: { $ref: '#/components/schemas/ObjectId' }, example: 66e27ab6f8e8f2378c89b123 }
+    AppointmentId: { name: id, in: path, required: true, schema: { $ref: '#/components/schemas/ObjectId' }, example: 66e27ab6f8e8f2378c89b123 }
+    Page: { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+    Limit: { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 10 } }
+    Specialization: { name: specialization, in: query, schema: { type: string }, example: Cardiology }
+    Search: { name: search, in: query, schema: { type: string }, example: Sarah }
+  responses:
+    AuthSuccess: { description: Authentication succeeded, content: { application/json: { schema: { $ref: '#/components/schemas/AuthResponse' } } } }
+    AuthSuccessCreated: { description: Account registered, content: { application/json: { schema: { $ref: '#/components/schemas/AuthResponse' } } } }
+    UserSuccess: { description: Current user returned, content: { application/json: { schema: { $ref: '#/components/schemas/UserResponse' } } } }
+    MessageSuccess: { description: Operation succeeded, content: { application/json: { schema: { $ref: '#/components/schemas/MessageResponse' } } } }
+    DoctorSuccess: { description: Doctor profile returned, content: { application/json: { schema: { $ref: '#/components/schemas/DoctorResponse' } } } }
+    DoctorSuccessCreated: { description: Doctor profile created, content: { application/json: { schema: { $ref: '#/components/schemas/DoctorResponse' } } } }
+    DoctorListSuccess: { description: Doctor profiles returned, content: { application/json: { schema: { $ref: '#/components/schemas/DoctorListResponse' } } } }
+    AppointmentSuccess: { description: Appointment returned, content: { application/json: { schema: { $ref: '#/components/schemas/AppointmentResponse' } } } }
+    AppointmentSuccessCreated: { description: Appointment created, content: { application/json: { schema: { $ref: '#/components/schemas/AppointmentResponse' } } } }
+    AppointmentListSuccess: { description: Appointments returned, content: { application/json: { schema: { $ref: '#/components/schemas/AppointmentListResponse' } } } }
+    ValidationError: { description: Request validation failed, content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+    UnauthorizedError: { description: Missing, invalid, expired, or revoked JWT, content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+    ForbiddenError: { description: Authenticated user lacks the required role or ownership, content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+    NotFoundError: { description: Requested resource does not exist, content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+    ConflictError: { description: Request conflicts with current resource state, content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
   schemas:
-    Appointment:
+    ObjectId: { type: string, pattern: '^[0-9a-fA-F]{24}$', example: 66e27ab6f8e8f2378c89b123 }
+    HealthResponse: { type: object, required: [status], properties: { status: { type: string, example: ok } } }
+    RegisterInput:
       type: object
+      required: [name, email, password]
       properties:
-        _id:
-          type: string
-          example: '66e27ab6f8e8f2378c89b123'
-        patient:
-          type: string
-          description: Patient User ID
-          example: '66e27ab6f8e8f2378c89b124'
-        doctor:
-          type: string
-          description: Doctor ID
-          example: '66e27ab6f8e8f2378c89b125'
-        startsAt:
-          type: string
-          format: date-time
-        endsAt:
-          type: string
-          format: date-time
-        reason:
-          type: string
-          example: 'Follow-up consultation'
-        status:
-          type: string
-          enum: [Pending, Confirmed, Completed, Cancelled]
-        cancelledAt:
-          type: string
-          format: date-time
-          nullable: true
-        cancelledBy:
-          type: string
-          nullable: true
-        createdAt:
-          type: string
-          format: date-time
-        updatedAt:
-          type: string
-          format: date-time
-
-    AppointmentSingleResponse:
+        name: { type: string, minLength: 2, maxLength: 100, example: Jane Patient }
+        email: { type: string, format: email, example: jane.patient@example.com }
+        password: { type: string, minLength: 8, maxLength: 128, format: password, example: SecurePass123! }
+        role: { type: string, enum: [patient, doctor], default: patient }
+    LoginInput:
       type: object
+      required: [email, password]
       properties:
-        success:
-          type: boolean
-          example: true
-        data:
-          $ref: '#/components/schemas/Appointment'
-
-    AppointmentListResponse:
+        email: { type: string, format: email, example: jane.patient@example.com }
+        password: { type: string, format: password, example: SecurePass123! }
+    User:
       type: object
+      required: [_id, name, email, role]
       properties:
-        success:
-          type: boolean
-          example: true
-        data:
-          type: array
-          items:
-            $ref: '#/components/schemas/Appointment'
-        pagination:
-          type: object
-          properties:
-            page:
-              type: integer
-              example: 1
-            limit:
-              type: integer
-              example: 10
-            total:
-              type: integer
-              example: 25
-            totalPages:
-              type: integer
-              example: 3
-
+        _id: { $ref: '#/components/schemas/ObjectId' }
+        name: { type: string, example: Jane Patient }
+        email: { type: string, format: email, example: jane.patient@example.com }
+        role: { type: string, enum: [patient, doctor, admin], example: patient }
+    AuthResponse: { type: object, required: [success, data, token], properties: { success: { type: boolean, example: true }, data: { $ref: '#/components/schemas/User' }, token: { type: string, description: Use this value in Swagger's Authorize dialog. } } }
+    UserResponse: { type: object, properties: { success: { type: boolean, example: true }, data: { $ref: '#/components/schemas/User' } } }
+    MessageResponse: { type: object, properties: { success: { type: boolean, example: true }, message: { type: string, example: Logged out successfully } } }
     WorkingHour:
       type: object
-      required:
-        - day
-        - startTime
-        - endTime
+      required: [day, startTime, endTime]
       properties:
-        day:
-          type: string
-          enum: [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday]
-          example: Monday
-        startTime:
-          type: string
-          pattern: '^([01]\d|2[0-3]):([0-5]\d)$'
-          example: '09:00'
-        endTime:
-          type: string
-          pattern: '^([01]\d|2[0-3]):([0-5]\d)$'
-          example: '17:00'
-
+        day: { type: string, enum: [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday] }
+        startTime: { type: string, pattern: '^([01]\\d|2[0-3]):([0-5]\\d)$', example: '09:00' }
+        endTime: { type: string, pattern: '^([01]\\d|2[0-3]):([0-5]\\d)$', example: '17:00' }
     Doctor:
       type: object
       properties:
-        _id:
-          type: string
-          example: '66e27ab6f8e8f2378c89b123'
-        name:
-          type: string
-          example: 'Dr. Sarah Connor'
-        specialization:
-          type: string
-          example: 'Cardiology'
-        description:
-          type: string
-          example: 'Senior Cardiologist with 12+ years of clinical experience.'
-        phone:
-          type: string
-          example: '+1-555-0199'
-        workingHours:
-          type: array
-          items:
-            $ref: '#/components/schemas/WorkingHour'
-        isActive:
-          type: boolean
-          example: true
-        createdAt:
-          type: string
-          format: date-time
-        updatedAt:
-          type: string
-          format: date-time
-
+        _id: { $ref: '#/components/schemas/ObjectId' }
+        user: { $ref: '#/components/schemas/ObjectId' }
+        name: { type: string, example: Dr. Sarah Connor }
+        specialization: { type: string, example: Cardiology }
+        description: { type: string, example: Senior cardiologist. }
+        phone: { type: string, example: '+1-555-0199' }
+        workingHours: { type: array, items: { $ref: '#/components/schemas/WorkingHour' } }
+        isActive: { type: boolean, example: true }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
     CreateDoctorInput:
       type: object
-      required:
-        - name
-        - specialization
-        - phone
+      required: [user, name, specialization, phone]
       properties:
-        name:
-          type: string
-          minLength: 2
-          maxLength: 100
-          example: 'Dr. Sarah Connor'
-        specialization:
-          type: string
-          example: 'Cardiology'
-        description:
-          type: string
-          maxLength: 1000
-          example: 'Senior Cardiologist with 12+ years of clinical experience.'
-        phone:
-          type: string
-          example: '+1-555-0199'
-        workingHours:
-          type: array
-          items:
-            $ref: '#/components/schemas/WorkingHour'
-          example:
-            - day: Monday
-              startTime: '09:00'
-              endTime: '17:00'
-            - day: Wednesday
-              startTime: '10:00'
-              endTime: '16:00'
-        isActive:
-          type: boolean
-          default: true
-
+        user: { $ref: '#/components/schemas/ObjectId' }
+        name: { type: string, minLength: 2, maxLength: 100, example: Dr. Sarah Connor }
+        specialization: { type: string, minLength: 2, maxLength: 100, example: Cardiology }
+        description: { type: string, maxLength: 1000, example: Senior cardiologist. }
+        phone: { type: string, minLength: 7, maxLength: 20, example: '+1-555-0199' }
+        workingHours: { type: array, items: { $ref: '#/components/schemas/WorkingHour' } }
+        isActive: { type: boolean, default: true }
     UpdateDoctorInput:
       type: object
+      minProperties: 1
       properties:
-        name:
-          type: string
-          minLength: 2
-          maxLength: 100
-          example: 'Dr. Sarah Connor'
-        specialization:
-          type: string
-          example: 'Cardiology'
-        description:
-          type: string
-          maxLength: 1000
-          example: 'Updated description'
-        phone:
-          type: string
-          example: '+1-555-0199'
-        workingHours:
-          type: array
-          items:
-            $ref: '#/components/schemas/WorkingHour'
-        isActive:
-          type: boolean
-
-    DoctorSingleResponse:
+        user: { $ref: '#/components/schemas/ObjectId' }
+        name: { type: string, minLength: 2, maxLength: 100 }
+        specialization: { type: string, minLength: 2, maxLength: 100 }
+        description: { type: string, maxLength: 1000 }
+        phone: { type: string, minLength: 7, maxLength: 20 }
+        workingHours: { type: array, items: { $ref: '#/components/schemas/WorkingHour' } }
+        isActive: { type: boolean }
+    DoctorResponse: { type: object, properties: { success: { type: boolean, example: true }, message: { type: string, example: Doctor retrieved successfully }, data: { $ref: '#/components/schemas/Doctor' } } }
+    DoctorListResponse: { type: object, properties: { success: { type: boolean, example: true }, message: { type: string, example: Doctors retrieved successfully }, data: { type: array, items: { $ref: '#/components/schemas/Doctor' } }, pagination: { $ref: '#/components/schemas/Pagination' } } }
+    BookAppointmentInput:
+      type: object
+      required: [doctor, startsAt, reason]
+      properties:
+        doctor: { $ref: '#/components/schemas/ObjectId' }
+        startsAt: { type: string, format: date-time, example: '2030-06-17T09:00:00.000Z' }
+        reason: { type: string, minLength: 1, maxLength: 1000, example: Annual check-up }
+    UpdateAppointmentStatusInput: { type: object, required: [status], properties: { status: { type: string, enum: [Pending, Confirmed, Completed, Cancelled], example: Confirmed } } }
+    Appointment:
       type: object
       properties:
-        success:
-          type: boolean
-          example: true
-        message:
-          type: string
-          example: Doctor created successfully
-        data:
-          $ref: '#/components/schemas/Doctor'
-
-    DoctorListResponse:
+        _id: { $ref: '#/components/schemas/ObjectId' }
+        patient: { $ref: '#/components/schemas/ObjectId' }
+        doctor: { $ref: '#/components/schemas/ObjectId' }
+        startsAt: { type: string, format: date-time }
+        endsAt: { type: string, format: date-time }
+        reason: { type: string }
+        status: { type: string, enum: [Pending, Confirmed, Completed, Cancelled] }
+        cancelledAt: { type: string, format: date-time, nullable: true }
+        cancelledBy: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    AppointmentResponse: { type: object, properties: { success: { type: boolean, example: true }, data: { $ref: '#/components/schemas/Appointment' } } }
+    AppointmentListResponse: { type: object, properties: { success: { type: boolean, example: true }, data: { type: array, items: { $ref: '#/components/schemas/Appointment' } }, pagination: { $ref: '#/components/schemas/Pagination' } } }
+    Pagination: { type: object, properties: { page: { type: integer, example: 1 }, limit: { type: integer, example: 10 }, total: { type: integer, example: 25 }, totalPages: { type: integer, example: 3 }, hasNextPage: { type: boolean, example: true }, hasPrevPage: { type: boolean, example: false } } }
+    SymptomSummaryInput:
       type: object
+      required: [symptoms]
       properties:
-        success:
-          type: boolean
-          example: true
-        message:
-          type: string
-          example: Doctors retrieved successfully
-        data:
-          type: array
-          items:
-            $ref: '#/components/schemas/Doctor'
-        pagination:
-          type: object
-          properties:
-            total:
-              type: integer
-              example: 25
-            page:
-              type: integer
-              example: 1
-            limit:
-              type: integer
-              example: 10
-            totalPages:
-              type: integer
-              example: 3
-            hasNextPage:
-              type: boolean
-              example: true
-            hasPrevPage:
-              type: boolean
-              example: false
-
-    SuccessResponse:
-      type: object
-      properties:
-        success:
-          type: boolean
-          example: true
-        message:
-          type: string
-          example: Doctor deleted successfully
-        data:
-          $ref: '#/components/schemas/Doctor'
-
+        symptoms: { type: string, minLength: 1, maxLength: 2000, example: Persistent cough and mild fever for three days. }
+        description: { type: string, maxLength: 2000, example: Symptoms worsen at night. }
+    SymptomSummaryResponse: { type: object, properties: { success: { type: boolean, example: true }, summary: { type: string, example: The patient reports a persistent cough and mild fever. } } }
     ErrorResponse:
       type: object
+      required: [success, message]
       properties:
-        success:
-          type: boolean
-          example: false
-        message:
-          type: string
-          example: Validation failed
-        errors:
-          type: array
-          items:
-            type: object
-            properties:
-              field:
-                type: string
-                example: name
-              message:
-                type: string
-                example: Doctor name cannot be empty
+        success: { type: boolean, example: false }
+        message: { type: string, example: Validation failed }
+        errors: { type: array, items: { type: object, properties: { field: { type: string, example: email }, message: { type: string, example: email must be a valid email } } } }

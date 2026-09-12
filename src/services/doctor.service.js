@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const Doctor = require('../models/doctor.model');
+const User = require('../models/User');
 const ApiError = require('../utils/apiError');
 
 /**
@@ -21,6 +22,7 @@ class DoctorService {
    * @returns {Promise<Doctor>}
    */
   async createDoctor(doctorData) {
+    await this.assertDoctorUser(doctorData.user);
     const doctor = await Doctor.create(doctorData);
     return doctor;
   }
@@ -100,6 +102,7 @@ class DoctorService {
    * @returns {Promise<Doctor>}
    */
   async updateDoctor(doctorId, updateData) {
+    if (updateData.user) await this.assertDoctorUser(updateData.user, doctorId);
     const updatedDoctor = await Doctor.findByIdAndUpdate(
       doctorId,
       { $set: updateData },
@@ -111,6 +114,15 @@ class DoctorService {
     }
 
     return updatedDoctor;
+  }
+
+  async assertDoctorUser(userId, currentDoctorId) {
+    const user = await User.findById(userId).lean();
+    if (!user || user.role !== 'doctor') throw new ApiError('Linked user must be a Doctor account', 400);
+    const existing = await Doctor.findOne({ user: userId }).select('_id').lean();
+    if (existing && String(existing._id) !== String(currentDoctorId)) {
+      throw new ApiError('This Doctor user is already linked to another profile', 409);
+    }
   }
 
   /**

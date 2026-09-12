@@ -1,74 +1,50 @@
-const User = require('../models/User');
+const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
+const User = require('../models/User');
+const RevokedToken = require('../models/revokedToken.model');
+const ApiError = require('../utils/apiError');
 
-const generateToken = (id) => {
-    return jwt.sign({ id }, process.env.JWT_SECRET, 
-    {
-        expiresIn: process.env.JWT_EXPIRES_IN,
-    });
-};
+const generateToken = (user) => jwt.sign(
+  { id: user._id, role: user.role, jti: crypto.randomUUID() },
+  process.env.JWT_SECRET,
+  { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+);
+const userResponse = (user) => ({ _id: user._id, name: user.name, email: user.email, role: user.role });
 
-const registerUser = async (req, res) => 
-{
-    try 
-    {
-        const { name, email, password, role } = req.body;
-        const userExists = await User.findOne({ email });
+async function registerUser(req, res, next) {
+  try {
+    const { name, email, password, role } = req.body;
+    if (await User.exists({ email })) throw new ApiError('User already exists', 409);
+    const user = await User.create({ name, email, password, role });
+    return res.status(201).json({ success: true, data: userResponse(user), token: generateToken(user) });
+  } catch (error) { return next(error); }
+}
 
-        if (userExists) 
-        {
-            return res.status(400).json({ message: 'User already exists' });
-        }
+async function loginUser(req, res, next) {
+  try {
+    const { email, password } = req.body;
+    const user = await User.findOne({ email });
+    if (!user || !(await user.matchPassword(password))) throw new ApiError('Invalid email or password', 401);
+    return res.json({ success: true, data: userResponse(user), token: generateToken(user) });
+  } catch (error) { return next(error); }
+}
 
-        const user = await User.create({ name, email, password, role });
+async function getMe(req, res, next) {
+  try {
+    const user = await User.findById(req.user.id).select('-password').lean();
+    return res.json({ success: true, data: userResponse(user) });
+  } catch (error) { return next(error); }
+}
 
-        if (user) 
-        {
-            res.status(201).json
-            ({
-                _id: user._id,
-                name: user.name,
-                email: user.email,
-                role: user.role,
-                token: generateToken(user._id),
-            });
-        }
-         else 
-        {
-            res.status(400).json({ message: 'Invalid user data' });
-        }
-    }
-     catch (error)
-    {
-        res.status(500).json({ message: error.message });
-    }
-};
+async function logoutUser(req, res, next) {
+  try {
+    await RevokedToken.updateOne(
+      { jti: req.user.tokenPayload.jti },
+      { $set: { expiresAt: new Date(req.user.tokenPayload.exp * 1000) } },
+      { upsert: true }
+    );
+    return res.json({ success: true, message: 'Logged out successfully' });
+  } catch (error) { return next(error); }
+}
 
-const loginUser = async (req, res) => 
-{
-    try 
-    {
-        const { email, password } = req.body;
-        const user = await User.findOne({ email });
-
-        if (user && (await user.matchPassword(password))) 
-        {
-            res.json({
-                _id: user._id,
-                name: user.name,
-                email: user.email,
-                role: user.role,
-                token: generateToken(user._id),
-            });
-        } 
-        else 
-        {
-            res.status(401).json({ message: 'Invalid email or password' });
-        }
-    } catch (error) 
-    {
-        res.status(500).json({ message: error.message });
-    }
-};
-
-module.exports = { registerUser, loginUser };
+module.exports = { registerUser, loginUser, getMe, logoutUser };

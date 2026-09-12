@@ -48,13 +48,13 @@ The **Hospital Appointment API** is a backend system designed to streamline the 
 
 | Feature | Status | Assignee |
 | ------- | ------ | -------- |
-| JWT Authentication & Authorization | 🔲 To Do | Karim Khaled Ismail |
+| JWT Authentication & Authorization | ✅ Done | Karim Khaled Ismail |
 | Doctor Profile Management (CRUD) | ✅ Done | Reda Salem |
-| Appointment Lifecycle Management | 🔲 To Do | Mousa Ahmed |
-| Gemini AI Symptom Summarization | 🔲 To Do | Heba Abd El Kreem |
+| Appointment Lifecycle Management | ✅ Done | Mousa Ahmed |
+| Gemini AI Symptom Summarization | ✅ Done | Heba Abd El Kreem |
 | Swagger API Documentation | ✅ Done | — |
-| Role-Based Access Control (Admin, Doctor, Patient) | 🔲 To Do | Karim Khaled Ismail |
-| Input Validation & Error Handling | 🔲 To Do | All |
+| Role-Based Access Control (admin, doctor, patient) | ✅ Done | Karim Khaled Ismail |
+| Input Validation & Error Handling | ✅ Done | All |
 
 ---
 
@@ -196,6 +196,14 @@ Create a `.env` file in the root directory based on `.env.example`:
 | `JWT_EXPIRES_IN` | JWT token expiration duration | `7d` |
 | `GEMINI_API_KEY` | Google Gemini API key | `AIza...` |
 | `CLIENT_URL` | Frontend client URL (for CORS) | `http://localhost:3000` |
+| `ADMIN_NAME` | Initial-admin display name (seed command) | `Initial Admin` |
+| `ADMIN_EMAIL` | Initial-admin email (seed command) | `admin@example.com` |
+| `ADMIN_PASSWORD` | Initial-admin password (seed command) | `strong-password` |
+
+Public registration supports `patient` and `doctor` roles only. Run `npm run seed:admin`
+with the three `ADMIN_*` variables to create or update the initial administrator. An
+administrator links each Doctor account to its doctor profile by supplying the `user`
+field when creating or updating that profile. Logging out revokes the current JWT.
 
 ---
 

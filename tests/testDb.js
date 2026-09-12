@@ -13,7 +13,8 @@ async function connectDB() {
     return;
   }
 
-  const baseUri = process.env.MONGO_URI_TEST || process.env.MONGO_URI;
+  // Tests must never fall back to a developer's production/development URI.
+  const baseUri = process.env.MONGO_URI_TEST || (process.env.NODE_ENV === 'test' ? null : process.env.MONGO_URI);
 
   if (baseUri && process.env.USE_MEMORY_DB !== 'true') {
     const testUri = baseUri.includes('mongodb.net/?')

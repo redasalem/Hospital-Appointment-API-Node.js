@@ -1,6 +1,7 @@
 const generateSymptomSummary = async (symptoms, description) => {
   const model = (process.env.GEMINI_MODEL || 'gemini-3.6-flash').trim();
   const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error('Gemini AI is not configured');
 
   const prompt = `You are an AI assistant for a hospital appointment system. 
 Summarize the following patient symptoms into a concise, structured bullet-point summary for a doctor.

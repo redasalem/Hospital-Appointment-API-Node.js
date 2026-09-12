@@ -6,11 +6,11 @@ const { appointmentIdParamSchema, bookAppointmentSchema, appointmentQuerySchema,
 
 const router = express.Router();
 
-router.post('/', protect, restrictTo('Patient'), validate(bookAppointmentSchema), controller.createAppointment);
-router.get('/', protect, restrictTo('Admin'), validate(appointmentQuerySchema, 'query'), controller.getAllAppointments);
-router.get('/my', protect, restrictTo('Patient', 'Doctor'), validate(appointmentQuerySchema, 'query'), controller.getMyAppointments);
-router.patch('/:id/status', protect, restrictTo('Doctor'), validate(appointmentIdParamSchema, 'params'), validate(updateStatusSchema), controller.updateAppointmentStatus);
-router.post('/:id/cancel', protect, restrictTo('Patient'), validate(appointmentIdParamSchema, 'params'), controller.cancelAppointment);
+router.post('/', protect, restrictTo('patient'), validate(bookAppointmentSchema), controller.createAppointment);
+router.get('/', protect, restrictTo('admin'), validate(appointmentQuerySchema, 'query'), controller.getAllAppointments);
+router.get('/my', protect, restrictTo('patient', 'doctor'), validate(appointmentQuerySchema, 'query'), controller.getMyAppointments);
+router.patch('/:id/status', protect, restrictTo('doctor'), validate(appointmentIdParamSchema, 'params'), validate(updateStatusSchema), controller.updateAppointmentStatus);
+router.post('/:id/cancel', protect, restrictTo('patient'), validate(appointmentIdParamSchema, 'params'), controller.cancelAppointment);
 router.get('/:id', protect, validate(appointmentIdParamSchema, 'params'), controller.getAppointmentById);
 
 module.exports = router;
