@@ -123,9 +123,9 @@ A comprehensive, step-by-step engineering roadmap and task checklist for develop
 ### Phase 6: Documentation & Verification
 > **Goal:** Deliver clear OpenAPI/Swagger documentation and a fully tested Postman collection.
 
-- [ ] **6.1 Swagger / OpenAPI Documentation:**
+- [x] **6.1 Swagger / OpenAPI Documentation:**
   - Document all 5 doctor endpoints, parameters, request bodies, and responses in `docs/swagger.yaml` or Swagger JSDoc annotations.
-- [ ] **6.2 Postman Collection:**
+- [x] **6.2 Postman Collection:**
   - Update `postman/HospitalAppointmentAPI.postman_collection.json` with a dedicated `Doctors` folder covering:
     - Successful doctor creation (`POST 201`).
     - Validation error when missing required fields (`POST 400`).

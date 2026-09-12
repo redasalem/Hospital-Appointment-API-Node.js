@@ -6,4 +6,431 @@ info:
 servers:
   - url: http://localhost:5000
     description: Development server
-paths: {}
+
+tags:
+  - name: Doctors
+    description: Doctor Profile Management Endpoints (HAA-4)
+
+paths:
+  /api/doctors:
+    post:
+      tags:
+        - Doctors
+      summary: Create a new doctor profile
+      description: Adds a new doctor to the system. Requires Admin privileges.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDoctorInput'
+      responses:
+        '201':
+          description: Doctor created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DoctorSingleResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - requires Admin role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    get:
+      tags:
+        - Doctors
+      summary: Get all doctors
+      description: Returns a paginated list of doctors with optional filtering by specialization and search by name.
+      parameters:
+        - name: specialization
+          in: query
+          description: Filter doctors by medical specialization (case-insensitive)
+          schema:
+            type: string
+          example: Cardiology
+        - name: search
+          in: query
+          description: Keyword search on doctor name
+          schema:
+            type: string
+          example: John
+        - name: page
+          in: query
+          description: Page number for pagination
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: limit
+          in: query
+          description: Number of records per page
+          schema:
+            type: integer
+            default: 10
+            minimum: 1
+            maximum: 100
+      responses:
+        '200':
+          description: List of doctors retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DoctorListResponse'
+        '400':
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/doctors/{id}:
+    get:
+      tags:
+        - Doctors
+      summary: Get doctor by ID
+      description: Fetches full profile details for a specific doctor.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: 24-character hexadecimal MongoDB ObjectId
+          schema:
+            type: string
+          example: 66e27ab6f8e8f2378c89b123
+      responses:
+        '200':
+          description: Doctor details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DoctorSingleResponse'
+        '400':
+          description: Invalid doctor ID format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Doctor not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    patch:
+      tags:
+        - Doctors
+      summary: Update a doctor profile
+      description: Partially updates an existing doctor profile. Requires Admin privileges.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: 24-character hexadecimal MongoDB ObjectId
+          schema:
+            type: string
+          example: 66e27ab6f8e8f2378c89b123
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateDoctorInput'
+      responses:
+        '200':
+          description: Doctor updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DoctorSingleResponse'
+        '400':
+          description: Validation error or invalid ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - requires Admin role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Doctor not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags:
+        - Doctors
+      summary: Delete a doctor profile
+      description: Deletes a doctor from the system. Fails if the doctor has active/upcoming appointments. Requires Admin privileges.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: 24-character hexadecimal MongoDB ObjectId
+          schema:
+            type: string
+          example: 66e27ab6f8e8f2378c89b123
+      responses:
+        '200':
+          description: Doctor deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Invalid ID or cannot delete doctor with active appointments
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - requires Admin role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Doctor not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    WorkingHour:
+      type: object
+      required:
+        - day
+        - startTime
+        - endTime
+      properties:
+        day:
+          type: string
+          enum: [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday]
+          example: Monday
+        startTime:
+          type: string
+          pattern: '^([01]\d|2[0-3]):([0-5]\d)$'
+          example: '09:00'
+        endTime:
+          type: string
+          pattern: '^([01]\d|2[0-3]):([0-5]\d)$'
+          example: '17:00'
+
+    Doctor:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: '66e27ab6f8e8f2378c89b123'
+        name:
+          type: string
+          example: 'Dr. Sarah Connor'
+        specialization:
+          type: string
+          example: 'Cardiology'
+        description:
+          type: string
+          example: 'Senior Cardiologist with 12+ years of clinical experience.'
+        phone:
+          type: string
+          example: '+1-555-0199'
+        workingHours:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkingHour'
+        isActive:
+          type: boolean
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreateDoctorInput:
+      type: object
+      required:
+        - name
+        - specialization
+        - phone
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 100
+          example: 'Dr. Sarah Connor'
+        specialization:
+          type: string
+          example: 'Cardiology'
+        description:
+          type: string
+          maxLength: 1000
+          example: 'Senior Cardiologist with 12+ years of clinical experience.'
+        phone:
+          type: string
+          example: '+1-555-0199'
+        workingHours:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkingHour'
+          example:
+            - day: Monday
+              startTime: '09:00'
+              endTime: '17:00'
+            - day: Wednesday
+              startTime: '10:00'
+              endTime: '16:00'
+        isActive:
+          type: boolean
+          default: true
+
+    UpdateDoctorInput:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 100
+          example: 'Dr. Sarah Connor'
+        specialization:
+          type: string
+          example: 'Cardiology'
+        description:
+          type: string
+          maxLength: 1000
+          example: 'Updated description'
+        phone:
+          type: string
+          example: '+1-555-0199'
+        workingHours:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkingHour'
+        isActive:
+          type: boolean
+
+    DoctorSingleResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Doctor created successfully
+        data:
+          $ref: '#/components/schemas/Doctor'
+
+    DoctorListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Doctors retrieved successfully
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Doctor'
+        pagination:
+          type: object
+          properties:
+            total:
+              type: integer
+              example: 25
+            page:
+              type: integer
+              example: 1
+            limit:
+              type: integer
+              example: 10
+            totalPages:
+              type: integer
+              example: 3
+            hasNextPage:
+              type: boolean
+              example: true
+            hasPrevPage:
+              type: boolean
+              example: false
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Doctor deleted successfully
+        data:
+          $ref: '#/components/schemas/Doctor'
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: Validation failed
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+                example: name
+              message:
+                type: string
+                example: Doctor name cannot be empty

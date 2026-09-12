@@ -1,8 +1,266 @@
 {
   "info": {
     "name": "Hospital Appointment API",
-    "description": "API collection for Hospital Appointment API - Team 5",
+    "description": "Comprehensive Postman API collection for Hospital Appointment API - Team 5",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
-  "item": []
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "doctorId",
+      "value": "66e27ab6f8e8f2378c89b123",
+      "type": "string"
+    },
+    {
+      "key": "adminToken",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Doctors",
+      "description": "Doctor Profile Management (HAA-4) Endpoints",
+      "item": [
+        {
+          "name": "1. Create Doctor (Success)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Dr. Sarah Connor\",\n  \"specialization\": \"Cardiology\",\n  \"description\": \"Senior Cardiologist with 12+ years experience in interventional cardiology.\",\n  \"phone\": \"+1-555-0199\",\n  \"workingHours\": [\n    {\n      \"day\": \"Monday\",\n      \"startTime\": \"09:00\",\n      \"endTime\": \"17:00\"\n    },\n    {\n      \"day\": \"Wednesday\",\n      \"startTime\": \"10:00\",\n      \"endTime\": \"16:00\"\n    }\n  ],\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/doctors",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "doctors"]
+            }
+          }
+        },
+        {
+          "name": "2. Create Doctor (Validation Error - Missing Name)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"specialization\": \"Pediatrics\",\n  \"phone\": \"+1-555-0200\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/doctors",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "doctors"]
+            }
+          }
+        },
+        {
+          "name": "3. Create Doctor (Validation Error - Invalid Hours)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Dr. Alex Murphy\",\n  \"specialization\": \"Neurology\",\n  \"phone\": \"+1-555-0201\",\n  \"workingHours\": [\n    {\n      \"day\": \"Monday\",\n      \"startTime\": \"17:00\",\n      \"endTime\": \"09:00\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/doctors",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "doctors"]
+            }
+          }
+        },
+        {
+          "name": "4. Get All Doctors (Default Pagination)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/doctors",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "doctors"]
+            }
+          }
+        },
+        {
+          "name": "5. Filter Doctors by Specialization & Page",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/doctors?specialization=Cardiology&page=1&limit=5",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "doctors"],
+              "query": [
+                {
+                  "key": "specialization",
+                  "value": "Cardiology"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "5"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "6. Search Doctors by Name",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/doctors?search=Sarah",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "doctors"],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "Sarah"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "7. Get Doctor by ID (Success)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/doctors/{{doctorId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "doctors", "{{doctorId}}"]
+            }
+          }
+        },
+        {
+          "name": "8. Get Doctor (Invalid ObjectId Format - 400)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/doctors/invalid-id-123",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "doctors", "invalid-id-123"]
+            }
+          }
+        },
+        {
+          "name": "9. Get Doctor (Non-Existent ID - 404)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/doctors/66e27ab6f8e8f2378c89b999",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "doctors", "66e27ab6f8e8f2378c89b999"]
+            }
+          }
+        },
+        {
+          "name": "10. Update Doctor Profile (PATCH)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"specialization\": \"Interventional Cardiology\",\n  \"description\": \"Lead Consultant of Cardiology Department.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/doctors/{{doctorId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "doctors", "{{doctorId}}"]
+            }
+          }
+        },
+        {
+          "name": "11. Update Doctor (Empty Body - 400)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/doctors/{{doctorId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "doctors", "{{doctorId}}"]
+            }
+          }
+        },
+        {
+          "name": "12. Delete Doctor (Success)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/doctors/{{doctorId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "doctors", "{{doctorId}}"]
+            }
+          }
+        }
+      ]
+    }
+  ]
 }
