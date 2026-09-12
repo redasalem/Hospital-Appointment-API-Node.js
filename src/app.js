@@ -16,11 +16,17 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
 });
 
+// Routes
+const doctorRoutes = require('./routes/doctor.routes');
+app.use('/api/doctors', doctorRoutes);
+
 // Error-handling middleware
 app.use((err, req, res, next) => {
-  // TODO: Implement error handling logic
-  res.status(err.status || 500).json({
+  const statusCode = err.statusCode || err.status || 500;
+  res.status(statusCode).json({
+    success: false,
     message: err.message || 'Internal Server Error',
+    ...(err.errors && { errors: err.errors }),
   });
 });
 

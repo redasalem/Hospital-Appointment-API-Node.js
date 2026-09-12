@@ -106,16 +106,16 @@ A comprehensive, step-by-step engineering roadmap and task checklist for develop
 ### Phase 5: Routing & RBAC Integration
 > **Goal:** Expose RESTful endpoints, link validation middleware, and prepare authentication/role guards.
 
-- [ ] **5.1 Create Route File:** `src/routes/doctor.routes.js`
-- [ ] **5.2 Wire Endpoints with Middleware:**
+- [x] **5.1 Create Route File:** `src/routes/doctor.routes.js`
+- [x] **5.2 Wire Endpoints with Middleware:**
   - `POST   /` -> `[protect, restrictTo('Admin'), validate(createDoctorSchema), createDoctorHandler]`
   - `GET    /` -> `[validate(doctorQuerySchema), getAllDoctorsHandler]`
   - `GET    /:id` -> `[validate(mongoIdSchema), getDoctorByIdHandler]`
   - `PATCH  /:id` -> `[protect, restrictTo('Admin'), validate(mongoIdSchema), validate(updateDoctorSchema), updateDoctorHandler]`
   - `DELETE /:id` -> `[protect, restrictTo('Admin'), validate(mongoIdSchema), deleteDoctorHandler]`
-- [ ] **5.3 Auth Middleware Stubs:**
+- [x] **5.3 Auth Middleware Stubs:**
   - Provide fallback/placeholder middleware for `protect` and `restrictTo('Admin')` so the module functions immediately and plugs into Karim's Auth module seamlessly.
-- [ ] **5.4 Register Routes in Application:**
+- [x] **5.4 Register Routes in Application:**
   - Mount `/api/doctors` in `src/app.js`.
 
 ---
