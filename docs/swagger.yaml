@@ -25,8 +25,8 @@ paths:
   /api/auth/register:
     post:
       tags: [Authentication]
-      summary: Register a patient or doctor account
-      description: Public registration permits only `patient` and `doctor` roles.
+      summary: Register a patient account
+      description: Public registration always creates a patient account. Admins create doctor accounts through `POST /api/doctors`.
       requestBody:
         required: true
         content: { application/json: { schema: { $ref: '#/components/schemas/RegisterInput' } } }
@@ -76,8 +76,8 @@ paths:
         '400': { $ref: '#/components/responses/ValidationError' }
     post:
       tags: [Doctors]
-      summary: Create a doctor profile
-      description: Requires an Admin JWT. `user` must identify an existing doctor account.
+      summary: Create a doctor account and profile
+      description: Requires an Admin JWT. Creates the doctor login account and linked profile in one request.
       security: [{ bearerAuth: [] }]
       requestBody:
         required: true
@@ -264,7 +264,6 @@ components:
         name: { type: string, minLength: 2, maxLength: 100, example: Jane Patient }
         email: { type: string, format: email, example: jane.patient@example.com }
         password: { type: string, minLength: 8, maxLength: 128, format: password, example: SecurePass123! }
-        role: { type: string, enum: [patient, doctor], default: patient }
     LoginInput:
       type: object
       required: [email, password]
@@ -304,10 +303,11 @@ components:
         updatedAt: { type: string, format: date-time }
     CreateDoctorInput:
       type: object
-      required: [user, name, specialization, phone]
+      required: [name, email, password, specialization, phone]
       properties:
-        user: { $ref: '#/components/schemas/ObjectId' }
         name: { type: string, minLength: 2, maxLength: 100, example: Dr. Sarah Connor }
+        email: { type: string, format: email, example: dr.sarah@example.com }
+        password: { type: string, minLength: 8, maxLength: 128, format: password, example: SecurePass123! }
         specialization: { type: string, minLength: 2, maxLength: 100, example: Cardiology }
         description: { type: string, maxLength: 1000, example: Senior cardiologist. }
         phone: { type: string, minLength: 7, maxLength: 20, example: '+1-555-0199' }
@@ -317,7 +317,6 @@ components:
       type: object
       minProperties: 1
       properties:
-        user: { $ref: '#/components/schemas/ObjectId' }
         name: { type: string, minLength: 2, maxLength: 100 }
         specialization: { type: string, minLength: 2, maxLength: 100 }
         description: { type: string, maxLength: 1000 }
