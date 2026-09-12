@@ -5,6 +5,8 @@ const errorHandler = require('./middlewares/errorHandler.middleware');
 
 const aiRoutes = require('./routes/aiRoutes');
 
+const aiRoutes = require('./routes/aiRoutes');
+
 const app = express();
 
 // Middleware
