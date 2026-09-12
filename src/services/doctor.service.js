@@ -103,7 +103,7 @@ class DoctorService {
     const updatedDoctor = await Doctor.findByIdAndUpdate(
       doctorId,
       { $set: updateData },
-      { new: true, runValidators: true }
+      { returnDocument: 'after', runValidators: true }
     ).lean();
 
     if (!updatedDoctor) {

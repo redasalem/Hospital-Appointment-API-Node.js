@@ -1,10 +1,10 @@
 const mongoose = require('mongoose');
-const { MongoMemoryServer } = require('mongodb-memory-server');
-const DoctorService = require('../src/services/doctor.service');
+const doctorService = require('../src/services/doctor.service');
 const Doctor = require('../src/models/doctor.model');
+const { connectDB, closeDB, clearDB } = require('./testDb');
 
-let mongoServer;
-const doctorService = new DoctorService();
+// Increase timeout for test database operations
+jest.setTimeout(30000);
 
 // ── Test Fixtures ──────────────────────────────────────────────────
 const sampleDoctor = {
@@ -20,17 +20,15 @@ const sampleDoctor = {
 
 // ── Setup & Teardown ───────────────────────────────────────────────
 beforeAll(async () => {
-  mongoServer = await MongoMemoryServer.create();
-  await mongoose.connect(mongoServer.getUri());
+  await connectDB();
 });
 
 afterAll(async () => {
-  await mongoose.disconnect();
-  await mongoServer.stop();
+  await closeDB();
 });
 
 afterEach(async () => {
-  await Doctor.deleteMany({});
+  await clearDB();
 });
 
 // ── Tests ──────────────────────────────────────────────────────────

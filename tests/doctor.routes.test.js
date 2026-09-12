@@ -1,10 +1,23 @@
 const mongoose = require('mongoose');
-const { MongoMemoryServer } = require('mongodb-memory-server');
 const request = require('supertest');
+const jwt = require('jsonwebtoken');
 const app = require('../src/app');
 const Doctor = require('../src/models/doctor.model');
+const { connectDB, closeDB, clearDB } = require('./testDb');
 
-let mongoServer;
+// Increase timeout for test database operations
+jest.setTimeout(30000);
+
+// Generate tokens for RBAC testing
+const adminToken = jwt.sign(
+  { id: 'admin-id-123', role: 'Admin' },
+  process.env.JWT_SECRET || 'your_jwt_secret_key'
+);
+
+const patientToken = jwt.sign(
+  { id: 'patient-id-123', role: 'Patient' },
+  process.env.JWT_SECRET || 'your_jwt_secret_key'
+);
 
 // ── Test Fixtures ──────────────────────────────────────────────────
 const sampleDoctor = {
@@ -20,26 +33,49 @@ const sampleDoctor = {
 
 // ── Setup & Teardown ───────────────────────────────────────────────
 beforeAll(async () => {
-  mongoServer = await MongoMemoryServer.create();
-  await mongoose.connect(mongoServer.getUri());
+  await connectDB();
 });
 
 afterAll(async () => {
-  await mongoose.disconnect();
-  await mongoServer.stop();
+  await closeDB();
 });
 
 afterEach(async () => {
-  await Doctor.deleteMany({});
+  await clearDB();
 });
 
 // ── Tests ──────────────────────────────────────────────────────────
 describe('Doctor Routes - /api/doctors', () => {
-  // ── POST /api/doctors ─────────────────────────────────────────
-  describe('POST /api/doctors', () => {
-    it('should create a new doctor (201)', async () => {
+  // ── Authentication & Authorization ────────────────────────────
+  describe('RBAC & Authentication', () => {
+    it('should return 401 when creating doctor without token', async () => {
       const res = await request(app)
         .post('/api/doctors')
+        .send(sampleDoctor)
+        .expect(401);
+
+      expect(res.body.success).toBe(false);
+      expect(res.body.message).toMatch(/not authorized|token/i);
+    });
+
+    it('should return 403 when non-Admin role tries to create doctor', async () => {
+      const res = await request(app)
+        .post('/api/doctors')
+        .set('Authorization', `Bearer ${patientToken}`)
+        .send(sampleDoctor)
+        .expect(403);
+
+      expect(res.body.success).toBe(false);
+      expect(res.body.message).toMatch(/forbidden|permission/i);
+    });
+  });
+
+  // ── POST /api/doctors ─────────────────────────────────────────
+  describe('POST /api/doctors', () => {
+    it('should create a new doctor (201) when user is Admin', async () => {
+      const res = await request(app)
+        .post('/api/doctors')
+        .set('Authorization', `Bearer ${adminToken}`)
         .send(sampleDoctor)
         .expect(201);
 
@@ -54,6 +90,7 @@ describe('Doctor Routes - /api/doctors', () => {
     it('should return 400 when required fields are missing', async () => {
       const res = await request(app)
         .post('/api/doctors')
+        .set('Authorization', `Bearer ${adminToken}`)
         .send({ description: 'No name or specialization' })
         .expect(400);
 
@@ -65,6 +102,7 @@ describe('Doctor Routes - /api/doctors', () => {
     it('should return 400 when name is too short', async () => {
       const res = await request(app)
         .post('/api/doctors')
+        .set('Authorization', `Bearer ${adminToken}`)
         .send({ ...sampleDoctor, name: 'A' })
         .expect(400);
 
@@ -74,9 +112,12 @@ describe('Doctor Routes - /api/doctors', () => {
     it('should return 400 for invalid working hours time format', async () => {
       const res = await request(app)
         .post('/api/doctors')
+        .set('Authorization', `Bearer ${adminToken}`)
         .send({
           ...sampleDoctor,
-          workingHours: [{ day: 'Monday', startTime: '25:00', endTime: '17:00' }],
+          workingHours: [
+            { day: 'Monday', startTime: '25:00', endTime: '17:00' },
+          ],
         })
         .expect(400);
 
@@ -86,9 +127,12 @@ describe('Doctor Routes - /api/doctors', () => {
     it('should return 400 when endTime is before startTime', async () => {
       const res = await request(app)
         .post('/api/doctors')
+        .set('Authorization', `Bearer ${adminToken}`)
         .send({
           ...sampleDoctor,
-          workingHours: [{ day: 'Monday', startTime: '17:00', endTime: '09:00' }],
+          workingHours: [
+            { day: 'Monday', startTime: '17:00', endTime: '09:00' },
+          ],
         })
         .expect(400);
 
@@ -186,11 +230,12 @@ describe('Doctor Routes - /api/doctors', () => {
 
   // ── PATCH /api/doctors/:id ────────────────────────────────────
   describe('PATCH /api/doctors/:id', () => {
-    it('should update a doctor (200)', async () => {
+    it('should update a doctor (200) with Admin token', async () => {
       const doctor = await Doctor.create(sampleDoctor);
 
       const res = await request(app)
         .patch(`/api/doctors/${doctor._id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
         .send({ name: 'Dr. Ahmed Salem', phone: '01011111111' })
         .expect(200);
 
@@ -204,6 +249,7 @@ describe('Doctor Routes - /api/doctors', () => {
 
       const res = await request(app)
         .patch(`/api/doctors/${fakeId}`)
+        .set('Authorization', `Bearer ${adminToken}`)
         .send({ name: 'New Name' })
         .expect(404);
 
@@ -215,6 +261,7 @@ describe('Doctor Routes - /api/doctors', () => {
 
       const res = await request(app)
         .patch(`/api/doctors/${doctor._id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
         .send({})
         .expect(400);
 
@@ -224,11 +271,12 @@ describe('Doctor Routes - /api/doctors', () => {
 
   // ── DELETE /api/doctors/:id ───────────────────────────────────
   describe('DELETE /api/doctors/:id', () => {
-    it('should delete a doctor (200)', async () => {
+    it('should delete a doctor (200) with Admin token', async () => {
       const doctor = await Doctor.create(sampleDoctor);
 
       const res = await request(app)
         .delete(`/api/doctors/${doctor._id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
       expect(res.body.success).toBe(true);
@@ -244,6 +292,7 @@ describe('Doctor Routes - /api/doctors', () => {
 
       const res = await request(app)
         .delete(`/api/doctors/${fakeId}`)
+        .set('Authorization', `Bearer ${adminToken}`)
         .expect(404);
 
       expect(res.body.success).toBe(false);
@@ -252,6 +301,7 @@ describe('Doctor Routes - /api/doctors', () => {
     it('should return 400 for invalid ID format', async () => {
       const res = await request(app)
         .delete('/api/doctors/invalid-id')
+        .set('Authorization', `Bearer ${adminToken}`)
         .expect(400);
 
       expect(res.body.success).toBe(false);
