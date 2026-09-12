@@ -49,7 +49,7 @@ The **Hospital Appointment API** is a backend system designed to streamline the 
 | Feature | Status | Assignee |
 | ------- | ------ | -------- |
 | JWT Authentication & Authorization | 🔲 To Do | Karim Khaled Ismail |
-| Doctor Profile Management (CRUD) | 🔲 To Do | Reda Salem |
+| Doctor Profile Management (CRUD) | ✅ Done | Reda Salem |
 | Appointment Lifecycle Management | 🔲 To Do | Mousa Ahmed |
 | Gemini AI Symptom Summarization | 🔲 To Do | Heba Abd El Kreem |
 | Swagger API Documentation | ✅ Done | — |
