@@ -149,9 +149,15 @@ async function updateAppointmentStatus(req, res, next) {
     }
 
     appointment.status = req.body.status;
+    const updateFields = { status: appointment.status };
+    if (appointment.status === 'Cancelled') {
+      updateFields.cancelledAt = new Date();
+      updateFields.cancelledBy = req.user.id;
+    }
+
     const updatedAppointment = await Appointment.findByIdAndUpdate(
       req.params.id,
-      { $set: { status: appointment.status } },
+      { $set: updateFields },
       { new: true, runValidators: true }
     );
 

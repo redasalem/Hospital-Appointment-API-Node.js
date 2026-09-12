@@ -34,7 +34,7 @@ const errorHandler = (err, req, res, next) => {
 
   // ── MongoDB Duplicate Key Error ───────────────────────────────────
   if (err.code === 11000) {
-    const field = Object.keys(err.keyValue).join(', ');
+    const field = err.keyValue ? Object.keys(err.keyValue).join(', ') : 'resource';
     return res.status(409).json({
       success: false,
       message: `Duplicate value for field: ${field}. Please use another value.`,

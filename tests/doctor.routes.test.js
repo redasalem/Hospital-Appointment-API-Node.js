@@ -1,23 +1,25 @@
+const crypto = require('crypto');
 const mongoose = require('mongoose');
 const request = require('supertest');
 const jwt = require('jsonwebtoken');
 const app = require('../src/app');
 const Doctor = require('../src/models/doctor.model');
+const User = require('../src/models/User');
 const { connectDB, closeDB, clearDB } = require('./testDb');
 
 // Increase timeout for test database operations
 jest.setTimeout(30000);
 
-// Generate tokens for RBAC testing
-const adminToken = jwt.sign(
-  { id: 'admin-id-123', role: 'Admin' },
-  process.env.JWT_SECRET || 'your_jwt_secret_key'
-);
+const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key';
 
-const patientToken = jwt.sign(
-  { id: 'patient-id-123', role: 'Patient' },
-  process.env.JWT_SECRET || 'your_jwt_secret_key'
-);
+// Helper to generate a valid JWT with jti
+function generateTestToken(user) {
+  return jwt.sign(
+    { id: user._id.toString(), role: user.role, jti: crypto.randomUUID() },
+    JWT_SECRET,
+    { expiresIn: '1h' }
+  );
+}
 
 // ── Test Fixtures ──────────────────────────────────────────────────
 const sampleDoctor = {
@@ -30,6 +32,10 @@ const sampleDoctor = {
     { day: 'Wednesday', startTime: '10:00', endTime: '15:00' },
   ],
 };
+
+let adminToken;
+let patientToken;
+let doctorUserId;
 
 // ── Setup & Teardown ───────────────────────────────────────────────
 beforeAll(async () => {
@@ -44,6 +50,34 @@ afterEach(async () => {
   await clearDB();
 });
 
+beforeEach(async () => {
+  const timestamp = `${Date.now()}-${Math.random()}`;
+
+  const adminUser = await User.create({
+    name: 'Admin User',
+    email: `admin-${timestamp}@example.com`,
+    password: 'password123',
+    role: 'admin',
+  });
+  adminToken = generateTestToken(adminUser);
+
+  const patientUser = await User.create({
+    name: 'Patient User',
+    email: `patient-${timestamp}@example.com`,
+    password: 'password123',
+    role: 'patient',
+  });
+  patientToken = generateTestToken(patientUser);
+
+  const doctorAccount = await User.create({
+    name: 'Doctor Account',
+    email: `doctor-${timestamp}@example.com`,
+    password: 'password123',
+    role: 'doctor',
+  });
+  doctorUserId = doctorAccount._id.toString();
+});
+
 // ── Tests ──────────────────────────────────────────────────────────
 describe('Doctor Routes - /api/doctors', () => {
   // ── Authentication & Authorization ────────────────────────────
@@ -51,7 +85,7 @@ describe('Doctor Routes - /api/doctors', () => {
     it('should return 401 when creating doctor without token', async () => {
       const res = await request(app)
         .post('/api/doctors')
-        .send(sampleDoctor)
+        .send({ ...sampleDoctor, user: doctorUserId })
         .expect(401);
 
       expect(res.body.success).toBe(false);
@@ -62,7 +96,7 @@ describe('Doctor Routes - /api/doctors', () => {
       const res = await request(app)
         .post('/api/doctors')
         .set('Authorization', `Bearer ${patientToken}`)
-        .send(sampleDoctor)
+        .send({ ...sampleDoctor, user: doctorUserId })
         .expect(403);
 
       expect(res.body.success).toBe(false);
@@ -76,7 +110,7 @@ describe('Doctor Routes - /api/doctors', () => {
       const res = await request(app)
         .post('/api/doctors')
         .set('Authorization', `Bearer ${adminToken}`)
-        .send(sampleDoctor)
+        .send({ ...sampleDoctor, user: doctorUserId })
         .expect(201);
 
       expect(res.body.success).toBe(true);
@@ -103,7 +137,7 @@ describe('Doctor Routes - /api/doctors', () => {
       const res = await request(app)
         .post('/api/doctors')
         .set('Authorization', `Bearer ${adminToken}`)
-        .send({ ...sampleDoctor, name: 'A' })
+        .send({ ...sampleDoctor, user: doctorUserId, name: 'A' })
         .expect(400);
 
       expect(res.body.success).toBe(false);
@@ -115,6 +149,7 @@ describe('Doctor Routes - /api/doctors', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
           ...sampleDoctor,
+          user: doctorUserId,
           workingHours: [
             { day: 'Monday', startTime: '25:00', endTime: '17:00' },
           ],
@@ -130,6 +165,7 @@ describe('Doctor Routes - /api/doctors', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
           ...sampleDoctor,
+          user: doctorUserId,
           workingHours: [
             { day: 'Monday', startTime: '17:00', endTime: '09:00' },
           ],

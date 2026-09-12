@@ -1,9 +1,2 @@
-const express = require('express');
-const { registerUser, loginUser } = require('../controllers/authController');
-
-const router = express.Router();
-
-router.post('/register', registerUser);
-router.post('/login', loginUser);
-
-module.exports = router;
+// Deprecated legacy file: forwards to active routes in src/routes/authRoutes.js
+module.exports = require('../src/routes/authRoutes');

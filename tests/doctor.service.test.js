@@ -1,10 +1,21 @@
 const mongoose = require('mongoose');
 const doctorService = require('../src/services/doctor.service');
 const Doctor = require('../src/models/doctor.model');
+const User = require('../src/models/User');
 const { connectDB, closeDB, clearDB } = require('./testDb');
 
 // Increase timeout for test database operations
 jest.setTimeout(30000);
+
+// Helper to create a user with role 'doctor'
+async function createDoctorUser(emailSuffix = '') {
+  return await User.create({
+    name: 'Dr. Test User',
+    email: `doctor-${Date.now()}-${emailSuffix}@example.com`,
+    password: 'password123',
+    role: 'doctor',
+  });
+}
 
 // ── Test Fixtures ──────────────────────────────────────────────────
 const sampleDoctor = {
@@ -36,7 +47,11 @@ describe('DoctorService', () => {
   // ── createDoctor ───────────────────────────────────────────────
   describe('createDoctor', () => {
     it('should create a new doctor successfully', async () => {
-      const doctor = await doctorService.createDoctor(sampleDoctor);
+      const docUser = await createDoctorUser('create-success');
+      const doctor = await doctorService.createDoctor({
+        ...sampleDoctor,
+        user: docUser._id.toString(),
+      });
 
       expect(doctor).toBeDefined();
       expect(doctor.name).toBe(sampleDoctor.name);
@@ -51,7 +66,9 @@ describe('DoctorService', () => {
     });
 
     it('should set default values correctly', async () => {
+      const docUser = await createDoctorUser('default-vals');
       const doctor = await doctorService.createDoctor({
+        user: docUser._id.toString(),
         name: 'Dr. Test',
         specialization: 'General',
         phone: '01099999999',

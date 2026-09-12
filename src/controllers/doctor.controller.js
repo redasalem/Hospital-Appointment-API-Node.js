@@ -1,13 +1,8 @@
 const doctorService = require('../services/doctor.service');
 
-/**
- * Controller handling HTTP requests for Doctor management
- */
+
 class DoctorController {
-  /**
-   * Create a new doctor profile
-   * @route POST /api/doctors
-   */
+
   async createDoctor(req, res, next) {
     try {
       const doctor = await doctorService.createDoctor(req.body);

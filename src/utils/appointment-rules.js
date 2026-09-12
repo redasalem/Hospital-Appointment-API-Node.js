@@ -15,17 +15,22 @@ function timeToMinutes(time) {
 }
 
 function isInWorkingHours(startsAt, endsAt, workingHours) {
+  if (!Array.isArray(workingHours) || workingHours.length === 0) return false;
+
   const start = new Date(startsAt);
   const end = new Date(endsAt);
   const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const day = days[start.getDay()];
-  const schedule = workingHours.find((item) => item.day === day);
 
-  if (!schedule || start.getDay() !== end.getDay()) return false;
+  if (start.getDay() !== end.getDay()) return false;
 
   const startTime = start.getHours() * 60 + start.getMinutes();
   const endTime = end.getHours() * 60 + end.getMinutes();
-  return startTime >= timeToMinutes(schedule.startTime) && endTime <= timeToMinutes(schedule.endTime);
+
+  return workingHours.some((schedule) => {
+    if (schedule.day !== day) return false;
+    return startTime >= timeToMinutes(schedule.startTime) && endTime <= timeToMinutes(schedule.endTime);
+  });
 }
 
 function canDoctorChangeStatus(currentStatus, newStatus) {
