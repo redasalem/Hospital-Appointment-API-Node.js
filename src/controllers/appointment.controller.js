@@ -21,9 +21,10 @@ async function findAllowedAppointment(appointmentId, user) {
     throw new ApiError('Appointment not found', 404);
   }
 
-  const patientOwnsAppointment = user.role === 'Patient' && hasSameId(appointment.patient, user.id);
-  const doctorOwnsAppointment = user.role === 'Doctor' && hasSameId(appointment.doctor, user.doctorId || user.id);
-  const isAdmin = user.role === 'Admin';
+  const patientOwnsAppointment = user.role === 'patient' && hasSameId(appointment.patient, user.id);
+  const doctorProfile = user.role === 'doctor' ? await Doctor.findOne({ user: user.id }).select('_id').lean() : null;
+  const doctorOwnsAppointment = doctorProfile && hasSameId(appointment.doctor, doctorProfile._id);
+  const isAdmin = user.role === 'admin';
 
   if (!isAdmin && !patientOwnsAppointment && !doctorOwnsAppointment) {
     throw new ApiError('You are not allowed to access this appointment', 403);
@@ -78,6 +79,10 @@ async function createAppointment(req, res, next) {
       throw new ApiError('Appointment is outside doctor working hours', 400);
     }
 
+    if (startsAt.getMinutes() % APPOINTMENT_DURATION !== 0 || startsAt.getSeconds() !== 0 || startsAt.getMilliseconds() !== 0) {
+      throw new ApiError('Appointment must start on a 30-minute boundary', 400);
+    }
+
     const appointment = await Appointment.create({
       patient: req.user.id,
       doctor: doctor._id,
@@ -98,9 +103,13 @@ async function createAppointment(req, res, next) {
 
 async function getMyAppointments(req, res, next) {
   try {
-    const filter = req.user.role === 'Patient'
-      ? { patient: req.user.id }
-      : { doctor: req.user.doctorId || req.user.id };
+    let filter;
+    if (req.user.role === 'patient') filter = { patient: req.user.id };
+    else {
+      const doctor = await Doctor.findOne({ user: req.user.id }).select('_id').lean();
+      if (!doctor) throw new ApiError('No doctor profile is linked to this account', 403);
+      filter = { doctor: doctor._id };
+    }
     const page = req.query.page;
     const limit = req.query.limit;
     const skip = (page - 1) * limit;

@@ -1,5 +1,7 @@
 const jwt = require('jsonwebtoken');
 const ApiError = require('../utils/apiError');
+const User = require('../models/User');
+const RevokedToken = require('../models/revokedToken.model');
 
 /**
  * Authentication & Authorization Middleware Stubs / Hooks
@@ -12,27 +14,19 @@ const ApiError = require('../utils/apiError');
 /**
  * Protect routes - Verifies JWT bearer token
  */
-const protect = (req, res, next) => {
+const protect = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
-
-    // If Authorization header is present, perform standard JWT verification
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.split(' ')[1];
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'dev-secret-key');
-      req.user = decoded;
-      return next();
-    }
-
-    // Pass-through during standalone module development if no auth header is supplied
-    // Allows Doctor CRUD testing until Karim implements user login/registration tokens
-    if (process.env.NODE_ENV === 'development' || !process.env.JWT_SECRET) {
-      req.user = { role: 'Admin', id: 'dev-admin-id' };
-      return next();
-    }
-
-    return next(new ApiError('Not authorized, missing or invalid token', 401));
+    if (!authHeader || !authHeader.startsWith('Bearer ')) throw new ApiError('Not authorized, missing token', 401);
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (!decoded.jti || await RevokedToken.exists({ jti: decoded.jti })) throw new ApiError('Not authorized, token has been revoked', 401);
+    const user = await User.findById(decoded.id).select('-password').lean();
+    if (!user) throw new ApiError('Not authorized, user no longer exists', 401);
+    req.user = { id: user._id.toString(), role: user.role, token, tokenPayload: decoded };
+    return next();
   } catch (error) {
+    if (error instanceof ApiError) return next(error);
     return next(new ApiError('Invalid or expired token', 401));
   }
 };

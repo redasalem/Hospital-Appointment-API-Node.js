@@ -46,6 +46,13 @@ const workingHourSchema = new mongoose.Schema(
  */
 const doctorSchema = new mongoose.Schema(
   {
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      unique: true,
+      sparse: true,
+      index: true,
+    },
     name: {
       type: String,
       required: [true, 'Doctor name is required'],
