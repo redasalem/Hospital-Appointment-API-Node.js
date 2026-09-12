@@ -10,8 +10,93 @@ servers:
 tags:
   - name: Doctors
     description: Doctor Profile Management Endpoints (HAA-4)
+  - name: Appointments
+    description: Appointment scheduling and administration endpoints (HAA-5)
 
 paths:
+  /api/appointments:
+    get:
+      tags:
+        - Appointments
+      summary: List all appointments
+      description: Returns a paginated system-wide appointment list. Requires the Admin role.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+            minimum: 1
+            maximum: 100
+      responses:
+        '200':
+          description: Paginated appointment list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppointmentListResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - requires Admin role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/appointments/{id}:
+    get:
+      tags:
+        - Appointments
+      summary: Get an appointment by ID
+      description: Returns an appointment to its owning Patient or Doctor, or to an Admin.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: 24-character hexadecimal MongoDB ObjectId
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Appointment details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppointmentSingleResponse'
+        '400':
+          description: Invalid appointment ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - appointment belongs to another user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Appointment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /api/doctors:
     post:
       tags:
@@ -241,6 +326,81 @@ components:
       bearerFormat: JWT
 
   schemas:
+    Appointment:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: '66e27ab6f8e8f2378c89b123'
+        patient:
+          type: string
+          description: Patient User ID
+          example: '66e27ab6f8e8f2378c89b124'
+        doctor:
+          type: string
+          description: Doctor ID
+          example: '66e27ab6f8e8f2378c89b125'
+        startsAt:
+          type: string
+          format: date-time
+        endsAt:
+          type: string
+          format: date-time
+        reason:
+          type: string
+          example: 'Follow-up consultation'
+        status:
+          type: string
+          enum: [Pending, Confirmed, Completed, Cancelled]
+        cancelledAt:
+          type: string
+          format: date-time
+          nullable: true
+        cancelledBy:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    AppointmentSingleResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: '#/components/schemas/Appointment'
+
+    AppointmentListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Appointment'
+        pagination:
+          type: object
+          properties:
+            page:
+              type: integer
+              example: 1
+            limit:
+              type: integer
+              example: 10
+            total:
+              type: integer
+              example: 25
+            totalPages:
+              type: integer
+              example: 3
+
     WorkingHour:
       type: object
       required:
