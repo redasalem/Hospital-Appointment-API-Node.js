@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const setupSwagger = require('./config/swagger');
+const errorHandler = require('./middlewares/errorHandler.middleware');
 
 const aiRoutes = require('./routes/aiRoutes');
 
@@ -18,6 +19,12 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
 });
 
+// Routes
+const doctorRoutes = require('./routes/doctor.routes');
+app.use('/api/doctors', doctorRoutes);
+
+// Global Error-handling middleware
+app.use(errorHandler);
 
 // Error-handling middleware
 app.use((err, req, res, next) => {
@@ -28,3 +35,4 @@ app.use((err, req, res, next) => {
 });
 
 module.exports = app;
+
