@@ -43,18 +43,18 @@ A comprehensive, step-by-step engineering roadmap and task checklist for develop
 ### Phase 2: Input Validation Layer (Joi)
 > **Goal:** Guard the application boundary by validating and sanitizing incoming payloads before hitting controllers or database logic.
 
-- [ ] **2.1 Create Validation File:** `src/validators/doctor.validator.js`
-- [ ] **2.2 Create Doctor Schema (`createDoctorSchema`):**
+- [x] **2.1 Create Validation File:** `src/validators/doctor.validator.js`
+- [x] **2.2 Create Doctor Schema (`createDoctorSchema`):**
   - Validate required fields (`name`, `specialization`, `phone`, `workingHours`).
   - Validate `workingHours` items: day names and `HH:mm` format regex.
   - Ensure `startTime < endTime`.
-- [ ] **2.3 Update Doctor Schema (`updateDoctorSchema`):**
+- [x] **2.3 Update Doctor Schema (`updateDoctorSchema`):**
   - Allow partial updates while preventing empty body payloads (`.min(1)`).
-- [ ] **2.4 Parameter ID Validation (`mongoIdSchema`):**
+- [x] **2.4 Parameter ID Validation (`mongoIdSchema`):**
   - Verify that `:id` parameter conforms to a valid 24-character hexadecimal MongoDB ObjectId.
-- [ ] **2.5 Query Parameters Schema (`doctorQuerySchema`):**
+- [x] **2.5 Query Parameters Schema (`doctorQuerySchema`):**
   - Validate query filters: `specialization`, `search`, `page`, and `limit`.
-- [ ] **2.6 Reusable Validation Middleware:**
+- [x] **2.6 Reusable Validation Middleware:**
   - Ensure a generic validator middleware (`src/middlewares/validate.middleware.js`) handles `body`, `params`, and `query` validation cleanly.
 
 ---
