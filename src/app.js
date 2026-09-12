@@ -23,7 +23,9 @@ app.get('/health', (req, res) => {
 
 // Routes
 const doctorRoutes = require('./routes/doctor.routes');
+const appointmentRoutes = require('./routes/appointment.routes');
 app.use('/api/doctors', doctorRoutes);
+app.use('/api/appointments', appointmentRoutes);
 
 // Global Error-handling middleware
 app.use(errorHandler);

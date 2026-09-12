@@ -84,8 +84,9 @@ The **Hospital Appointment API** is a backend system designed to streamline the 
 | Method | Endpoint | Purpose |
 | ------ | -------- | ------- |
 | `POST` | `/api/appointments` | Book an appointment |
+| `GET` | `/api/appointments` | List all appointments (Admin only) |
 | `GET` | `/api/appointments/my` | Get current user's appointments |
-| `GET` | `/api/appointments/:id` | Get a permitted appointment |
+| `GET` | `/api/appointments/:id` | Get a permitted appointment (Admin may view any) |
 | `PATCH` | `/api/appointments/:id/status` | Update appointment status |
 | `POST` | `/api/appointments/:id/cancel` | Cancel an eligible appointment |
 
