@@ -1,29 +1,34 @@
-const { GoogleGenAI} = require("@google/genai");
+const generateSymptomSummary = async (symptoms, description) => {
+  const model = (process.env.GEMINI_MODEL || 'gemini-3.6-flash').trim();
+  const apiKey = process.env.GEMINI_API_KEY;
 
-const generateSymptomSummary = async (symptoms, description) =>{
+  const prompt = `You are an AI assistant for a hospital appointment system. 
+Summarize the following patient symptoms into a concise, structured bullet-point summary for a doctor.
+IMPORTANT: DO NOT provide any medical diagnosis or treatment advice.
 
-    const ai = new GoogleGenAI({
-        apiKey : process.env.GEMINI_API_KEY
-    })
+Symptoms: ${symptoms}
+Additional Info: ${description || 'None'}`;
 
-    const prompt = `You are an AI assistant for a hospital appointment system. 
-    Summarize the following patient symptoms into a concise, structured bullet-point summary for a doctor.
-    IMPORTANT: DO NOT provide any medical diagnosis or treatment advice.
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      'x-goog-api-key': process.env.GEMINI_API_KEY,
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+      }),
+      signal: AbortSignal.timeout(15000),
+    }
+  );
 
-    Symptoms: ${symptoms}
-    Additional Info: ${description || 'None'}`;
+  if (!response.ok) {
+    const err = await response.text();
+    throw new Error(`Gemini API error ${response.status}: ${err}`);
+  }
 
-    const response = await ai.models.generateContent({
-    model: 'gemini-2.5-flash',
-    contents: prompt,
-  });
-
-  return response.text;
+  const data = await response.json();
+  return data.candidates[0].content.parts[0].text;
 };
 
-module.exports = {
-    generateSymptomSummary
-};
-
-
-
+module.exports = { generateSymptomSummary };
