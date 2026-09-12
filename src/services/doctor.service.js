@@ -3,6 +3,15 @@ const Doctor = require('../models/doctor.model');
 const ApiError = require('../utils/apiError');
 
 /**
+ * Escapes special regex characters in a string to prevent ReDoS attacks
+ * @param {string} str - Raw user input
+ * @returns {string} Escaped string safe for use in RegExp
+ */
+function escapeRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
  * Service handling Doctor business logic and database interactions
  */
 class DoctorService {
@@ -36,9 +45,9 @@ class DoctorService {
       query.specialization = { $regex: `^${specialization}$`, $options: 'i' };
     }
 
-    // Keyword search on name if provided
+    // Keyword search on name if provided (escaped to prevent ReDoS)
     if (search) {
-      query.name = { $regex: search, $options: 'i' };
+      query.name = { $regex: escapeRegex(search), $options: 'i' };
     }
 
     const pageNumber = Math.max(1, parseInt(page, 10));

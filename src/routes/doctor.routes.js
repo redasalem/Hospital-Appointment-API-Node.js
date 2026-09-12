@@ -62,7 +62,7 @@ router.patch(
 
 /**
  * @route   DELETE /api/doctors/:id
- * @desc    Delete a doctor profile (prevented if doctor has active appointments)
+ * @desc    Delete a doctor profile (blocked if doctor has active appointments)
  * @access  Private (Admin only)
  */
 router.delete(

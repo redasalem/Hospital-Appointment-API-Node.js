@@ -83,8 +83,7 @@ const doctorSchema = new mongoose.Schema(
   }
 );
 
-// Indexes to optimize search and filtering
-doctorSchema.index({ name: 'text', specialization: 'text' });
+// Index to optimize filtering by specialization and active status
 doctorSchema.index({ specialization: 1, isActive: 1 });
 
 const Doctor = mongoose.model('Doctor', doctorSchema);

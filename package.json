@@ -18,8 +18,8 @@
     "joi": "^18.2.8",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.9.5",
-    "swagger-jsdoc": "^6.3.0",
-    "swagger-ui-express": "^5.0.1"
+    "swagger-ui-express": "^5.0.1",
+    "yaml": "^2.7.1"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"
