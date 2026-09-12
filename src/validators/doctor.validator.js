@@ -47,14 +47,19 @@ const workingHourSchema = Joi.object({
  * Validation schema for creating a new doctor (POST /api/doctors)
  */
 const createDoctorSchema = Joi.object({
-  user: Joi.string().pattern(mongoIdRegex).required().messages({
-    'any.required': 'A linked Doctor user is required',
-  }),
   name: Joi.string().trim().min(2).max(100).required().messages({
     'string.empty': 'Doctor name cannot be empty',
     'string.min': 'Doctor name must be at least 2 characters long',
     'string.max': 'Doctor name cannot exceed 100 characters',
     'any.required': 'Doctor name is required',
+  }),
+  email: Joi.string().trim().lowercase().email().required().messages({
+    'string.email': 'A valid doctor email is required',
+    'any.required': 'Doctor email is required',
+  }),
+  password: Joi.string().min(8).max(128).required().messages({
+    'string.min': 'Password must be at least 8 characters long',
+    'any.required': 'Doctor password is required',
   }),
   specialization: Joi.string().trim().min(2).max(100).required().messages({
     'string.empty': 'Specialization cannot be empty',
@@ -75,7 +80,6 @@ const createDoctorSchema = Joi.object({
  * Validation schema for updating a doctor (PATCH /api/doctors/:id)
  */
 const updateDoctorSchema = Joi.object({
-  user: Joi.string().pattern(mongoIdRegex).optional(),
   name: Joi.string().trim().min(2).max(100).optional().messages({
     'string.empty': 'Doctor name cannot be empty',
     'string.min': 'Doctor name must be at least 2 characters long',

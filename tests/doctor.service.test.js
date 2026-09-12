@@ -20,6 +20,8 @@ async function createDoctorUser(emailSuffix = '') {
 // ── Test Fixtures ──────────────────────────────────────────────────
 const sampleDoctor = {
   name: 'Dr. Ahmed Hassan',
+  email: 'ahmed.hassan@example.com',
+  password: 'SecurePass123!',
   specialization: 'Cardiology',
   description: 'Experienced heart specialist',
   phone: '01012345678',
@@ -59,10 +61,24 @@ describe('DoctorService', () => {
       expect(doctor.phone).toBe(sampleDoctor.phone);
       expect(doctor.workingHours).toHaveLength(2);
       expect(doctor.isActive).toBe(true);
+      const user = await User.findById(doctor.user);
+      expect(user.email).toBe(sampleDoctor.email);
+      expect(user.role).toBe('doctor');
     });
 
     it('should throw validation error when required fields are missing', async () => {
       await expect(doctorService.createDoctor({})).rejects.toThrow();
+    });
+
+    it('removes the account when profile creation fails', async () => {
+      await expect(doctorService.createDoctor({
+        name: 'Dr. Incomplete',
+        email: 'incomplete@example.com',
+        password: 'SecurePass123!',
+        specialization: 'General',
+      })).rejects.toThrow();
+
+      expect(await User.exists({ email: 'incomplete@example.com' })).toBeNull();
     });
 
     it('should set default values correctly', async () => {
@@ -70,6 +86,8 @@ describe('DoctorService', () => {
       const doctor = await doctorService.createDoctor({
         user: docUser._id.toString(),
         name: 'Dr. Test',
+        email: 'test@example.com',
+        password: 'SecurePass123!',
         specialization: 'General',
         phone: '01099999999',
       });

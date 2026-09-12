@@ -73,7 +73,7 @@ The **Hospital Appointment API** is a backend system designed to streamline the 
 
 | Method | Endpoint | Purpose |
 | ------ | -------- | ------- |
-| `POST` | `/api/doctors` | Create a doctor |
+| `POST` | `/api/doctors` | Admin creates a doctor account and profile |
 | `GET` | `/api/doctors` | List doctors |
 | `GET` | `/api/doctors/:id` | Get a doctor |
 | `PATCH` | `/api/doctors/:id` | Update a doctor |
