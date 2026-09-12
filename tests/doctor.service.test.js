@@ -7,16 +7,6 @@ const { connectDB, closeDB, clearDB } = require('./testDb');
 // Increase timeout for test database operations
 jest.setTimeout(30000);
 
-// Helper to create a user with role 'doctor'
-async function createDoctorUser(emailSuffix = '') {
-  return await User.create({
-    name: 'Dr. Test User',
-    email: `doctor-${Date.now()}-${emailSuffix}@example.com`,
-    password: 'password123',
-    role: 'doctor',
-  });
-}
-
 // ── Test Fixtures ──────────────────────────────────────────────────
 const sampleDoctor = {
   name: 'Dr. Ahmed Hassan',
@@ -49,11 +39,7 @@ describe('DoctorService', () => {
   // ── createDoctor ───────────────────────────────────────────────
   describe('createDoctor', () => {
     it('should create a new doctor successfully', async () => {
-      const docUser = await createDoctorUser('create-success');
-      const doctor = await doctorService.createDoctor({
-        ...sampleDoctor,
-        user: docUser._id.toString(),
-      });
+      const doctor = await doctorService.createDoctor(sampleDoctor);
 
       expect(doctor).toBeDefined();
       expect(doctor.name).toBe(sampleDoctor.name);
@@ -82,9 +68,7 @@ describe('DoctorService', () => {
     });
 
     it('should set default values correctly', async () => {
-      const docUser = await createDoctorUser('default-vals');
       const doctor = await doctorService.createDoctor({
-        user: docUser._id.toString(),
         name: 'Dr. Test',
         email: 'test@example.com',
         password: 'SecurePass123!',
