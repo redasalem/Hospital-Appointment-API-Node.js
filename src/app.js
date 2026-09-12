@@ -30,3 +30,4 @@ app.use('/api/appointments', appointmentRoutes);
 app.use(errorHandler);
 
 module.exports = app;
+ 
