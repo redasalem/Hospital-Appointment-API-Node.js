@@ -83,14 +83,14 @@ A comprehensive, step-by-step engineering roadmap and task checklist for develop
 ### Phase 4: Controller Layer (HTTP Transport)
 > **Goal:** Handle incoming HTTP requests, delegate to services, and send consistent, standardized responses.
 
-- [ ] **4.1 Create Controller File:** `src/controllers/doctor.controller.js`
-- [ ] **4.2 Implement Route Handlers:**
+- [x] **4.1 Create Controller File:** `src/controllers/doctor.controller.js`
+- [x] **4.2 Implement Route Handlers:**
   - `createDoctorHandler` -> HTTP `201 Created`
   - `getAllDoctorsHandler` -> HTTP `200 OK` (includes data + pagination metadata)
   - `getDoctorByIdHandler` -> HTTP `200 OK`
   - `updateDoctorHandler` -> HTTP `200 OK`
   - `deleteDoctorHandler` -> HTTP `200 OK` (confirmation message)
-- [ ] **4.3 Standardize Response Envelope:**
+- [x] **4.3 Standardize Response Envelope:**
   ```json
   {
     "success": true,
@@ -98,7 +98,7 @@ A comprehensive, step-by-step engineering roadmap and task checklist for develop
     "data": { ... }
   }
   ```
-- [ ] **4.4 Async Error Propagation:**
+- [x] **4.4 Async Error Propagation:**
   - Utilize Express 5 native async error forwarding to central error middleware.
 
 ---
