@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const setupSwagger = require('./config/swagger');
+const errorHandler = require('./middlewares/errorHandler.middleware');
 
 const app = express();
 
@@ -20,14 +21,8 @@ app.get('/health', (req, res) => {
 const doctorRoutes = require('./routes/doctor.routes');
 app.use('/api/doctors', doctorRoutes);
 
-// Error-handling middleware
-app.use((err, req, res, next) => {
-  const statusCode = err.statusCode || err.status || 500;
-  res.status(statusCode).json({
-    success: false,
-    message: err.message || 'Internal Server Error',
-    ...(err.errors && { errors: err.errors }),
-  });
-});
+// Global Error-handling middleware
+app.use(errorHandler);
 
 module.exports = app;
+

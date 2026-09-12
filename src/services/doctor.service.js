@@ -42,7 +42,7 @@ class DoctorService {
 
     // Filter by specialization if provided
     if (specialization) {
-      query.specialization = { $regex: `^${specialization}$`, $options: 'i' };
+      query.specialization = { $regex: `^${escapeRegex(specialization)}$`, $options: 'i' };
     }
 
     // Keyword search on name if provided (escaped to prevent ReDoS)
