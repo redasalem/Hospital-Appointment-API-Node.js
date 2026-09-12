@@ -62,18 +62,18 @@ A comprehensive, step-by-step engineering roadmap and task checklist for develop
 ### Phase 3: Business Logic & Service Layer
 > **Goal:** Encapsulate database operations and business rules in a decoupled service layer.
 
-- [ ] **3.1 Create Service File:** `src/services/doctor.service.js`
-- [ ] **3.2 `createDoctor(data)`:**
+- [x] **3.1 Create Service File:** `src/services/doctor.service.js`
+- [x] **3.2 `createDoctor(data)`:**
   - Persist new doctor profile in MongoDB and return the created record.
-- [ ] **3.3 `getAllDoctors(filterOptions, paginationOptions)`:**
+- [x] **3.3 `getAllDoctors(filterOptions, paginationOptions)`:**
   - Case-insensitive text search on `name`.
   - Exact or partial match on `specialization`.
   - Pagination calculations: `page`, `limit`, `skip`, `totalPages`, and `totalCount`.
-- [ ] **3.4 `getDoctorById(id)`:**
+- [x] **3.4 `getDoctorById(id)`:**
   - Find doctor by ID; throw custom `404 Not Found` error if non-existent.
-- [ ] **3.5 `updateDoctor(id, updateData)`:**
+- [x] **3.5 `updateDoctor(id, updateData)`:**
   - Update doctor with `{ new: true, runValidators: true }`; throw `404` if not found.
-- [ ] **3.6 `deleteDoctor(id)`:**
+- [x] **3.6 `deleteDoctor(id)`:**
   - **Critical Business Rule:** Check for any upcoming or active appointments (`pending`, `confirmed`) linked to this doctor.
   - Reject deletion with `409 Conflict` (or `400 Bad Request`) if active appointments exist.
   - Remove doctor document if no active appointments are pending.
